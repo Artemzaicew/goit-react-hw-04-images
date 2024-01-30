@@ -1,16 +1,55 @@
-export const App = () => {
-  return (
-    <div
-      style={{
-        height: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontSize: 40,
-        color: '#010101'
-      }}
-    >
-      React homework template
-    </div>
-  );
-};
+import React from 'react';
+import css from './App.module.css';
+import { Component } from 'react';
+import { Modal } from './Modal/Modal';
+import { Searchbar } from './Searchbar/Searchbar';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { ImageGallery } from './ImageGallery/ImageGallery';
+import { ButtonClose } from './ButtonClose/ButtonClose';
+
+export class App extends Component {
+  state = {
+    showModal: false,
+    searchQuery: '',
+    largeImageURL: '',
+    alt: '',
+  };
+
+  toggleModal = () => {
+    this.setState(({ showModal }) => ({
+      showModal: !showModal,
+    }));
+  };
+
+  handleFormSubmit = searchQuery => {
+    this.setState({ searchQuery });
+  };
+
+  showLargeImage = (largeImageURL, alt) => {
+    this.setState({ largeImageURL, alt });
+    this.toggleModal();
+  };
+
+  render() {
+    const { showModal, searchQuery, largeImageURL, alt } = this.state;
+    const { handleFormSubmit, showLargeImage, toggleModal, } = this;
+
+    return (
+      <div className={css.app}>
+        <ToastContainer autoClose={3000} />
+        <Searchbar onSubmit={handleFormSubmit} />
+        <ImageGallery
+          searchQuery={searchQuery}
+          showLargeImage={showLargeImage}
+        />
+        {showModal && (
+          <Modal onClose={toggleModal}>
+            <img src={largeImageURL} alt={alt} />
+            <ButtonClose onClick={toggleModal}/>
+          </Modal>
+        )}
+      </div>
+    );
+  }
+}
