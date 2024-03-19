@@ -1,28 +1,24 @@
 import { fetchImage } from 'components/services/getImage';
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import css from './ImageGallery.module.css';
 import { TailSpin } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
 import { ImageGalleryItem } from 'components/ImageGalleryItem/ImageGalleryItem';
 import { Button } from 'components/Button/Button';
 
-export class ImageGallery extends Component {
-  state = {
-    dataImages: [],
-    status: 'idle',
-    page: 1,
-    showButton: false,
-  };
-
-  componentDidUpdate(prevProps, prevState) {
-    const prevSearchQuery = prevProps.searchQuery;
-    const searchQuery = this.props.searchQuery;
-    const page = this.props.page;
+export default function ImageGallery(props) {
+  const { searchQuery, page } = props;
+  const [dataImages, setDataImages] = useState([]);
+  const [status, setStatus] = useState('idle');
+  const [showButton, setShowButton] = useState(false);
     
-    if (prevSearchQuery !== searchQuery) {
-      this.setState({ status: 'pending' });
+  useEffect(()=>{
+    if (!searchQuery) 
+    return
+    
+    setStatus('pending');
 
-      fetchImage(searchQuery, page)
+    fetchImage(searchQuery, page)
         .then(response => {
           if (!response.ok) {
             toast('Network response was not ok');
@@ -32,18 +28,18 @@ export class ImageGallery extends Component {
         .then(data => {
           if (data.hits.length === 0) {
             toast(`No results found for "${searchQuery}"`);
-            this.setState({ status: 'rejected' });
+            setStatus('rejected');
           } else {
-            this.setState({ dataImages: data.hits, status: 'resolved' })
+            setDataImages(data.hits);
+            setStatus('resolved');
           };
         })
-        .catch(error => this.setState({ status: 'rejected' }));
-    }
-  }
+        .catch(error => setStatus('rejected'));
+  },[searchQuery, page])
 
-  showMoreImages = () => {
-    const { searchQuery } = this.props;
-    const nextPage = this.state.page + 1;
+
+  const showMoreImages = () => {
+    const nextPage = page + 1;
   
     fetchImage(searchQuery, nextPage)
       .then(response => {
@@ -55,23 +51,16 @@ export class ImageGallery extends Component {
       .then(data => {
         if (data.hits.length === 0) {
           toast(`No more results found for "${searchQuery}"`);
-          this.setState({showButton: false})
+          setShowButton(false)
         } else {
-          this.setState(prevState => ({
-            dataImages: [...prevState.dataImages, ...data.hits],
-            page: nextPage
-          }));
+          setDataImages(prevDataImages => [...prevDataImages, ...data.hits]);
+          props.setPage(nextPage);
         }
       })
       .catch(error => {
         toast('Error fetching more images');
       });
   };
-  
-  
-  render() {
-    const { dataImages, status, showButton } = this.state;
-    const { showLargeImage } = this.props;
   
     if (status === 'pending') {
       return <TailSpin wrapperClass={css.spiner} color="blue" />;
@@ -87,13 +76,12 @@ export class ImageGallery extends Component {
                   className={css.ImageGalleryItem}
                   key={el.id}
                   imageInfo={el}
-                  showLargeImage={showLargeImage}
+                  showLargeImage={props.showLargeImage}
                 />
               ))}
           </ul>
-          <Button onClick={this.showMoreImages} showButton={showButton} />
+          <Button onClick={showMoreImages} showButton={showButton} />
         </>
       );
     }
   }
-}
